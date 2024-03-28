@@ -1,5 +1,6 @@
 import express from "express";
 import userRouter from "./routes/user.routes";
+import movieRouter from "./routes/movie.routes";
 
 const app = express();
 
@@ -8,5 +9,7 @@ app.use(express.json());
 
 //in the route user use the middleware userRouter
 app.use("/user", userRouter);
+
+app.use("/movie", movieRouter);
 
 export default app;
