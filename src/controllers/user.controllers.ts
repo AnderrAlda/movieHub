@@ -43,8 +43,8 @@ export const updateUser = async (req: Request, res: Response) => {
 export const deleteUser = async (req: Request, res: Response) => {
   const { userId } = req.params;
   try {
-    const userDeleted = await UserModel.findByIdAndDelete({ _id: userId });
-    res.status(204).send(`user deleted with id:${userId}`);
+    await UserModel.findByIdAndDelete({ _id: userId });
+    res.status(204).send(`user deleted`);
   } catch (error) {
     res.status(400).send(error);
   }
