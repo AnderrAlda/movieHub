@@ -12,10 +12,10 @@ export const getAllMovies = async (req: Request, res: Response) => {
 };
 
 export const createMovie = async (req: Request, res: Response) => {
-  const { name, image, score } = req.body;
+  const { name, poster_image, score } = req.body;
   const { userId } = req.params;
   try {
-    const movie = await MovieModel.create({ name, image, score });
+    const movie = await MovieModel.create({ name, poster_image, score });
     await UserModel.findByIdAndUpdate(
       { _id: userId },
       {
@@ -31,13 +31,13 @@ export const createMovie = async (req: Request, res: Response) => {
 };
 
 export const updateMovie = async (req: Request, res: Response) => {
-  const { name, image, score } = req.body;
+  const { name, poster_image, score } = req.body;
   const { movieId } = req.params;
 
   try {
     const movieUpdated = await MovieModel.findByIdAndUpdate(
       { _id: movieId },
-      { name, image, score },
+      { name, poster_image, score },
       { new: true }
     );
     res.status(201).send(movieUpdated);
