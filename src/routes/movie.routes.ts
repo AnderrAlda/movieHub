@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  addGenreToMovie,
   createMovie,
   deleteMovie,
   getAllMovies,
@@ -11,5 +12,6 @@ movieRouter.post("/:userId", createMovie);
 movieRouter.get("/", getAllMovies);
 movieRouter.patch("/:movieId", updateMovie);
 movieRouter.delete("/:movieId", deleteMovie);
+movieRouter.post("/:movieId/addGenre", addGenreToMovie);
 
 export default movieRouter;

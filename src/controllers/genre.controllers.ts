@@ -4,19 +4,24 @@ import MovieModel from "../models/movie.model";
 
 export const getAllGenres = async (req: Request, res: Response) => {
   try {
-    const allGenres = await GenreModel.find();
+    const allGenres = await GenreModel.find().populate("movies");
     res.status(201).send(allGenres);
-  } catch (error) {}
+  } catch (error: any) {
+    res.status(400).send("Error retrieving genres: " + error.message);
+  }
 };
 
 export const createGenre = async (req: Request, res: Response) => {
   const { name } = req.body;
-
   const { movieId } = req.params;
 
+  if (!name) {
+    return res.status(400).send("Missing required fields");
+  }
+
   try {
-    const genre = await GenreModel.create({ name });
-    await MovieModel.findByIdAndUpdate(
+    const genre = await GenreModel.create({ name, movies: [movieId] });
+    const movieUpdateResult = await MovieModel.findByIdAndUpdate(
       { _id: movieId },
       {
         $push: {
@@ -24,15 +29,28 @@ export const createGenre = async (req: Request, res: Response) => {
         },
       }
     );
+
+    // Check if the movie update operation was successful
+    if (!movieUpdateResult) {
+      // If the movie does not exist or the update failed for some reason
+      // Rollback genre creation by deleting the genre
+      await GenreModel.findByIdAndDelete(genre._id);
+      return res.status(404).send("Movie not found or update failed");
+    }
+
     res.status(201).send(genre);
-  } catch (error) {
-    res.status(400).send(error);
+  } catch (error: any) {
+    res.status(400).send("Error creating genre: " + error.message);
   }
 };
 
 export const updateGenre = async (req: Request, res: Response) => {
   const { name } = req.body;
   const { genreId } = req.params;
+
+  if (!name) {
+    return res.status(400).send("Missing required fields");
+  }
 
   try {
     const genreUpdated = await GenreModel.findByIdAndUpdate(
@@ -42,18 +60,27 @@ export const updateGenre = async (req: Request, res: Response) => {
       },
       { new: true }
     );
+
+    if (!genreUpdated) {
+      return res.status(404).send("Genre not found");
+    }
+
     res.status(201).send(genreUpdated);
-  } catch (error) {
-    res.status(400).send(error);
+  } catch (error: any) {
+    res.status(400).send("Error updating genre: " + error.message);
   }
 };
 
 export const deleteGenre = async (req: Request, res: Response) => {
   const { genreId } = req.params;
   try {
-    await GenreModel.findByIdAndDelete({ _id: genreId });
-    res.status(204).send("Movie deleted");
-  } catch (error) {
-    res.status(400).send(error);
+    const deletedGenre = await GenreModel.findByIdAndDelete({ _id: genreId });
+    if (!deletedGenre) {
+      return res.status(404).send("Genre not found");
+    }
+
+    res.status(204).send("Genre deleted successfully");
+  } catch (error: any) {
+    res.status(400).send("Error deleting genre: " + error.message);
   }
 };
