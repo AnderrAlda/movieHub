@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+/* import { Request, Response } from "express";
 import MovieModel from "../models/movie.model";
 import UserModel from "../models/user.model";
 import GenreModel from "../models/genre.model";
@@ -127,3 +127,4 @@ export const deleteMovie = async (req: Request, res: Response) => {
     res.status(400).send("Error deleting movie: " + error.message);
   }
 };
+ */

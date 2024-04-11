@@ -9,38 +9,45 @@ generator client {
 }
 
 datasource db {
-  provider = "mongodb"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
-  name String
-  email String @unique
-  password String 
+  id Int @id @default(autoincrement())
+  name String @db.VarChar(255)
+  email String @unique @db.VarChar(255)
+  password String @db.VarChar(255)
   createAt DateTime @default(now())
   updateAt DateTime @updatedAt
   movies Movies[]
 }
 
 model Movies {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
-  name String
-  poster_image String
+  id Int @id @default(autoincrement())
+  name String @db.VarChar(255)
+  poster_image String @db.VarChar(255)
   score Int
   createAt DateTime @default(now())
   updateAt DateTime @updatedAt
-  userId String @db.ObjectId
+  userId Int
   user User @relation(fields: [userId],references: [id], onDelete: Cascade)
-  genreIds String[] @db.ObjectId
-  genres   Genre[]   @relation(fields: [genreIds], references: [id])
-  }
+  genres MovieGenre[]
+   }
 
 model Genre {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
+  id Int @id @default(autoincrement())
   name String
   createAt DateTime @default(now())
   updateAt DateTime @updatedAt
-  movieIds String[] @db.ObjectId
-  movies   Movies[]   @relation(fields: [movieIds], references: [id])
-}
+  movies MovieGenre[]
+ }
+
+ model MovieGenre {
+  movieId Int
+  genreId Int
+  movie Movies @relation(fields: [movieId],references: [id])
+  genre Genre @relation(fields: [genreId],references: [id])
+
+  @@id([movieId,genreId])
+ }

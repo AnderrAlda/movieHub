@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+/* import { Request, Response } from "express";
 import GenreModel from "../models/genre.model";
 import MovieModel from "../models/movie.model";
 import prisma from "../db/client";
@@ -70,3 +70,4 @@ export const deleteGenre = async (req: Request, res: Response) => {
     res.status(400).send("Error deleting genre: " + error.message);
   }
 };
+ */

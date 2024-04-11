@@ -34,7 +34,7 @@ export const createUser = async (req: Request, res: Response) => {
 
 export const updateUser = async (req: Request, res: Response) => {
   const { name, email, password } = req.body;
-  const { userId } = req.params;
+  const userId = parseInt(req.params.userId);
 
   if (!name || !email || !password) {
     return res.status(400).send("Missing required fields");
@@ -57,7 +57,7 @@ export const updateUser = async (req: Request, res: Response) => {
 };
 
 export const deleteUser = async (req: Request, res: Response) => {
-  const { userId } = req.params;
+  const userId = parseInt(req.params.userId);
   try {
     const deletedUser = await prisma.user.delete({
       where: { id: userId },

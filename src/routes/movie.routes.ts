@@ -1,17 +1,17 @@
 import { Router } from "express";
-import {
+/* import {
   addGenreToMovie,
   createMovie,
   deleteMovie,
   getAllMovies,
   updateMovie,
-} from "../controllers/movie.controllers";
+} from "../controllers/movie.controllers"; */
 
 const movieRouter = Router();
-movieRouter.post("/:userId", createMovie);
+/* movieRouter.post("/:userId", createMovie);
 movieRouter.get("/", getAllMovies);
 movieRouter.patch("/:movieId", updateMovie);
 movieRouter.delete("/:movieId", deleteMovie);
-movieRouter.post("/:movieId/addGenre", addGenreToMovie);
+movieRouter.post("/:movieId/addGenre", addGenreToMovie); */
 
 export default movieRouter;
