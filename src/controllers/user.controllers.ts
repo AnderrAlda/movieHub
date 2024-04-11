@@ -1,51 +1,74 @@
 import { Request, Response } from "express";
 import UserModel from "../models/user.model";
+import prisma from "../db/client";
 
 export const getAllUser = async (req: Request, res: Response) => {
   try {
-    const AllUsers = await UserModel.find().populate("movies");
+    const AllUsers = await prisma.user.findMany({
+      include: {
+        movies: true,
+      },
+    });
     res.status(200).send(AllUsers);
-  } catch (error) {
-    res.status(400).send(error);
+  } catch (error: any) {
+    res.status(400).send("Error retrieving users: " + error.message);
   }
 };
 
 export const createUser = async (req: Request, res: Response) => {
   const { name, email, password } = req.body;
 
-  /* 
-  control as much errors as possible. this are going to be evaluated heavily
-if (!name || !email || !password) return res.status(400).send("Mising data");
- */
+  if (!name || !email || !password) {
+    return res.status(400).send("Missing required fields");
+  }
+
   try {
-    const newUser = await UserModel.create({ name, email, password });
+    const newUser = await prisma.user.create({
+      data: { name, email, password },
+    });
     res.status(201).send(newUser);
-  } catch (error) {
-    res.status(400).send(error);
+  } catch (error: any) {
+    res.status(400).send("Error creating user: " + error.message);
   }
 };
 
 export const updateUser = async (req: Request, res: Response) => {
   const { name, email, password } = req.body;
   const { userId } = req.params;
+
+  if (!name || !email || !password) {
+    return res.status(400).send("Missing required fields");
+  }
+
   try {
-    const userUpdated = await UserModel.findByIdAndUpdate(
-      { _id: userId },
-      { name, email, password },
-      { new: true } //to return a new changed object
-    );
+    const userUpdated = await prisma.user.update({
+      where: { id: userId },
+      data: { name, email, password },
+    });
+
+    if (!userUpdated) {
+      return res.status(404).send("User not found");
+    }
+
     res.status(201).send(userUpdated);
-  } catch (error) {
-    res.status(400).send(error);
+  } catch (error: any) {
+    res.status(400).send("Error updating user: " + error.message);
   }
 };
 
 export const deleteUser = async (req: Request, res: Response) => {
   const { userId } = req.params;
   try {
-    const userDeleted = await UserModel.findByIdAndDelete({ _id: userId });
-    res.status(204).send(`user deleted with id:${userId}`);
-  } catch (error) {
-    res.status(400).send(error);
+    const deletedUser = await prisma.user.delete({
+      where: { id: userId },
+    });
+
+    if (!deletedUser) {
+      return res.status(404).send("User not found");
+    }
+
+    res.status(204).send("User deleted successfully");
+  } catch (error: any) {
+    res.status(400).send("Error deleting user: " + error.message);
   }
 };
