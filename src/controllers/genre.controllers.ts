@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
 import GenreModel from "../models/genre.model";
 import MovieModel from "../models/movie.model";
-
+import prisma from "../db/client";
 export const getAllGenres = async (req: Request, res: Response) => {
   try {
-    const allGenres = await GenreModel.find().populate("movies");
+    const allGenres = await prisma.genre.findMany();
     res.status(201).send(allGenres);
   } catch (error: any) {
     res.status(400).send("Error retrieving genres: " + error.message);
@@ -20,23 +20,9 @@ export const createGenre = async (req: Request, res: Response) => {
   }
 
   try {
-    const genre = await GenreModel.create({ name, movies: [movieId] });
-    const movieUpdateResult = await MovieModel.findByIdAndUpdate(
-      { _id: movieId },
-      {
-        $push: {
-          genres: genre._id,
-        },
-      }
-    );
-
-    // Check if the movie update operation was successful
-    if (!movieUpdateResult) {
-      // If the movie does not exist or the update failed for some reason
-      // Rollback genre creation by deleting the genre
-      await GenreModel.findByIdAndDelete(genre._id);
-      return res.status(404).send("Movie not found or update failed");
-    }
+    const genre = await prisma.genre.create({
+      data: { name, movies: { connect: { id: movieId } } },
+    });
 
     res.status(201).send(genre);
   } catch (error: any) {
@@ -53,13 +39,10 @@ export const updateGenre = async (req: Request, res: Response) => {
   }
 
   try {
-    const genreUpdated = await GenreModel.findByIdAndUpdate(
-      { _id: genreId },
-      {
-        name,
-      },
-      { new: true }
-    );
+    const genreUpdated = await prisma.genre.update({
+      where: { id: genreId },
+      data: { name },
+    });
 
     if (!genreUpdated) {
       return res.status(404).send("Genre not found");
@@ -74,7 +57,10 @@ export const updateGenre = async (req: Request, res: Response) => {
 export const deleteGenre = async (req: Request, res: Response) => {
   const { genreId } = req.params;
   try {
-    const deletedGenre = await GenreModel.findByIdAndDelete({ _id: genreId });
+    const deletedGenre = await prisma.genre.delete({
+      where: { id: genreId },
+    });
+
     if (!deletedGenre) {
       return res.status(404).send("Genre not found");
     }

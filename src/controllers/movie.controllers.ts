@@ -2,10 +2,11 @@ import { Request, Response } from "express";
 import MovieModel from "../models/movie.model";
 import UserModel from "../models/user.model";
 import GenreModel from "../models/genre.model";
+import prisma from "../db/client";
 
 export const getAllMovies = async (req: Request, res: Response) => {
   try {
-    const allMovies = await MovieModel.find().populate("genres");
+    const allMovies = await prisma.movies.findMany();
     res.status(201).send(allMovies);
   } catch (error: any) {
     res.status(400).send("Error retrieving movies: " + error.message);
@@ -17,8 +18,16 @@ export const addGenreToMovie = async (req: Request, res: Response) => {
   const { movieId } = req.params;
 
   try {
-    const movie = await MovieModel.findById(movieId);
-    const genre = await GenreModel.findById(genreId);
+    const movie = await prisma.movies.findUnique({
+      where: {
+        id: movieId,
+      },
+    });
+    const genre = await prisma.genre.findUnique({
+      where: {
+        id: genreId,
+      },
+    });
     if (!movie) {
       return res.status(400).send("Movie not found");
     }
@@ -26,11 +35,31 @@ export const addGenreToMovie = async (req: Request, res: Response) => {
       return res.status(400).send("Genre not found");
     }
 
-    movie.genres.push(genreId);
-    await movie.save();
+    await prisma.movies.update({
+      where: {
+        id: movieId,
+      },
+      data: {
+        genres: {
+          connect: {
+            id: genreId,
+          },
+        },
+      },
+    });
 
-    genre.movies.push(movieId);
-    await genre.save();
+    await prisma.genre.update({
+      where: {
+        id: genreId,
+      },
+      data: {
+        movies: {
+          connect: {
+            id: movieId,
+          },
+        },
+      },
+    });
 
     res.status(200).send(movie);
   } catch (error: any) {
@@ -47,24 +76,9 @@ export const createMovie = async (req: Request, res: Response) => {
   }
 
   try {
-    const movie = await MovieModel.create({ name, poster_image, score });
-
-    const userUpdateResult = await UserModel.findByIdAndUpdate(
-      { _id: userId },
-      {
-        $push: {
-          movies: movie._id,
-        },
-      }
-    );
-
-    // Check if the user update operation was successful
-    if (!userUpdateResult) {
-      // If the user does not exist or the update failed for some reason
-      // Rollback movie creation by deleting the movie
-      await MovieModel.findByIdAndDelete(movie._id);
-      return res.status(404).send("User not found or update failed");
-    }
+    const movie = await prisma.movies.create({
+      data: { name, poster_image, score, user: { connect: { id: userId } } },
+    });
 
     res.status(201).send(movie);
   } catch (error: any) {
@@ -81,11 +95,10 @@ export const updateMovie = async (req: Request, res: Response) => {
   }
 
   try {
-    const movieUpdated = await MovieModel.findByIdAndUpdate(
-      { _id: movieId },
-      { name, poster_image, score },
-      { new: true }
-    );
+    const movieUpdated = await prisma.movies.update({
+      where: { id: movieId },
+      data: { name, poster_image, score },
+    });
 
     if (!movieUpdated) {
       return res.status(404).send("Movie not found");
@@ -101,7 +114,9 @@ export const deleteMovie = async (req: Request, res: Response) => {
   const { movieId } = req.params;
 
   try {
-    const deletedMovie = await MovieModel.findByIdAndDelete({ _id: movieId });
+    const deletedMovie = await prisma.movies.delete({
+      where: { id: movieId },
+    });
 
     if (!deletedMovie) {
       return res.status(404).send("Movie not found");
