@@ -73,11 +73,19 @@ export const updateGenre = async (req: Request, res: Response) => {
 
 export const deleteGenre = async (req: Request, res: Response) => {
   const { genreId } = req.params;
+
   try {
+    // Find the genre to be deleted
     const deletedGenre = await GenreModel.findByIdAndDelete({ _id: genreId });
     if (!deletedGenre) {
       return res.status(404).send("Genre not found");
     }
+
+    // Remove the genre's ID from the movies that reference it
+    await MovieModel.updateMany(
+      { genres: genreId },
+      { $pull: { genres: genreId } }
+    );
 
     res.status(204).send("Genre deleted successfully");
   } catch (error: any) {

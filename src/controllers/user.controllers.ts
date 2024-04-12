@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import UserModel from "../models/user.model";
+import MovieModel from "../models/movie.model";
 
 export const getAllUser = async (req: Request, res: Response) => {
   try {
@@ -53,11 +54,17 @@ export const updateUser = async (req: Request, res: Response) => {
 export const deleteUser = async (req: Request, res: Response) => {
   const { userId } = req.params;
   try {
+    // Find the user to be deleted
     const deletedUser = await UserModel.findByIdAndDelete(userId);
-
     if (!deletedUser) {
       return res.status(404).send("User not found");
     }
+
+    // Remove the user's ID from the movies that reference it
+    await MovieModel.updateMany(
+      { users: userId },
+      { $pull: { users: userId } }
+    );
 
     res.status(204).send("User deleted successfully");
   } catch (error: any) {

@@ -101,11 +101,17 @@ export const deleteMovie = async (req: Request, res: Response) => {
   const { movieId } = req.params;
 
   try {
+    // Find the movie to be deleted
     const deletedMovie = await MovieModel.findByIdAndDelete({ _id: movieId });
-
     if (!deletedMovie) {
       return res.status(404).send("Movie not found");
     }
+
+    // Remove the movie's ID from the genres that reference it
+    await GenreModel.updateMany(
+      { movies: movieId },
+      { $pull: { movies: movieId } }
+    );
 
     res.status(204).send("Movie deleted successfully");
   } catch (error: any) {
