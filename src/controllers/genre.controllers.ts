@@ -1,6 +1,4 @@
 import { Request, Response } from "express";
-import GenreModel from "../models/genre.model";
-import MovieModel from "../models/movie.model";
 import prisma from "../db/client";
 export const getAllGenres = async (req: Request, res: Response) => {
   try {
