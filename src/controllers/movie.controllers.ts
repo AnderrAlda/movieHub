@@ -1,12 +1,17 @@
-/* import { Request, Response } from "express";
-import MovieModel from "../models/movie.model";
-import UserModel from "../models/user.model";
-import GenreModel from "../models/genre.model";
+import { Request, Response } from "express";
 import prisma from "../db/client";
 
 export const getAllMovies = async (req: Request, res: Response) => {
   try {
-    const allMovies = await prisma.movies.findMany();
+    const allMovies = await prisma.movies.findMany({
+      include: {
+        genres: {
+          include: {
+            genre: true,
+          },
+        },
+      },
+    });
     res.status(201).send(allMovies);
   } catch (error: any) {
     res.status(400).send("Error retrieving movies: " + error.message);
@@ -15,72 +20,91 @@ export const getAllMovies = async (req: Request, res: Response) => {
 
 export const addGenreToMovie = async (req: Request, res: Response) => {
   const { genreId } = req.body;
-  const { movieId } = req.params;
+  const movieId = parseInt(req.params.movieId);
+
+  if (!genreId || !movieId) {
+    return res.status(400).send("Invalid genreId or movieId");
+  }
 
   try {
+    // Check if the movie and genre exist
     const movie = await prisma.movies.findUnique({
-      where: {
-        id: movieId,
-      },
+      where: { id: movieId },
     });
+
     const genre = await prisma.genre.findUnique({
-      where: {
-        id: genreId,
-      },
+      where: { id: genreId },
     });
+
     if (!movie) {
-      return res.status(400).send("Movie not found");
+      return res.status(404).send("Movie not found");
     }
+
     if (!genre) {
-      return res.status(400).send("Genre not found");
+      return res.status(404).send("Genre not found");
     }
 
-    await prisma.movies.update({
-      where: {
-        id: movieId,
-      },
+    // Add the genre to the movie
+    await prisma.movieGenre.create({
       data: {
-        genres: {
-          connect: {
-            id: genreId,
-          },
-        },
+        movieId: movieId,
+        genreId: genreId,
       },
     });
 
-    await prisma.genre.update({
-      where: {
-        id: genreId,
-      },
-      data: {
-        movies: {
-          connect: {
-            id: movieId,
-          },
-        },
-      },
-    });
-
-    res.status(200).send(movie);
+    res.status(200).send("Genre added to movie successfully");
   } catch (error: any) {
     res.status(400).send("Error adding genre to movie: " + error.message);
   }
 };
 
 export const createMovie = async (req: Request, res: Response) => {
-  const { name, poster_image, score } = req.body;
-  const { userId } = req.params;
+  const { name, poster_image, score, genres } = req.body;
+
+  const userId = parseInt(req.params.userId);
 
   if (!name || !poster_image || !score) {
     return res.status(400).send("Missing required fields");
   }
 
+  if (!userId) {
+    return res.status(400).send("Missing required userId parameter");
+  }
+
   try {
-    const movie = await prisma.movies.create({
-      data: { name, poster_image, score, user: { connect: { id: userId } } },
+    const movie = await prisma.$transaction(async (prisma) => {
+      //create movie
+      const newMovie = await prisma.movies.create({
+        data: { name, poster_image, score, user: { connect: { id: userId } } },
+      });
+
+      //create genres of the movie
+      if (genres && genres.length) {
+        const createGenres = genres.map((genreId: number) => ({
+          movieId: newMovie.id,
+          genreId: genreId,
+        }));
+
+        await prisma.movieGenre.createMany({
+          data: createGenres,
+        });
+      }
+
+      //return the created movie
+      return prisma.movies.findUnique({
+        where: {
+          id: newMovie.id,
+        },
+        include: {
+          genres: true,
+        },
+      });
     });
 
-    res.status(201).send(movie);
+    res.status(201).send({
+      msg: "Movie created successfully",
+      data: movie,
+    });
   } catch (error: any) {
     res.status(400).send("Error creating movie: " + error.message);
   }
@@ -88,7 +112,8 @@ export const createMovie = async (req: Request, res: Response) => {
 
 export const updateMovie = async (req: Request, res: Response) => {
   const { name, poster_image, score } = req.body;
-  const { movieId } = req.params;
+
+  const movieId = parseInt(req.params.movieId);
 
   if (!name || !poster_image || !score) {
     return res.status(400).send("Missing required fields");
@@ -111,9 +136,15 @@ export const updateMovie = async (req: Request, res: Response) => {
 };
 
 export const deleteMovie = async (req: Request, res: Response) => {
-  const { movieId } = req.params;
+  const movieId = parseInt(req.params.movieId);
 
   try {
+    // Delete associated MovieGenre records first
+    await prisma.movieGenre.deleteMany({
+      where: { movieId: movieId },
+    });
+
+    // Now delete the movie
     const deletedMovie = await prisma.movies.delete({
       where: { id: movieId },
     });
@@ -127,4 +158,3 @@ export const deleteMovie = async (req: Request, res: Response) => {
     res.status(400).send("Error deleting movie: " + error.message);
   }
 };
- */

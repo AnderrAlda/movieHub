@@ -1,5 +1,4 @@
 import { Request, Response } from "express";
-import UserModel from "../models/user.model";
 import prisma from "../db/client";
 
 export const getAllUser = async (req: Request, res: Response) => {
