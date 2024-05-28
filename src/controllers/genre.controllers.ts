@@ -1,6 +1,96 @@
 import { Request, Response } from "express";
 import prisma from "../db/client";
 
+
+export const addGenreToMovie = async (req: Request, res: Response) => {
+  const movieId = parseInt(req.params.movieId);
+  const genreId = parseInt(req.params.genreId);
+
+  if (!movieId || !genreId) {
+    return res.status(400).send("Missing required movieId or genreId parameter");
+  }
+
+  try {
+    // Check if the movie exists
+    const movie = await prisma.movies.findUnique({
+      where: {
+        id: movieId,
+      },
+    });
+
+    if (!movie) {
+      return res.status(404).send("Movie not found");
+    }
+
+    // Check if the genre exists
+    const genre = await prisma.genre.findUnique({
+      where: {
+        id: genreId,
+      },
+    });
+
+    if (!genre) {
+      return res.status(404).send("Genre not found");
+    }
+
+    // Create the MovieGenre record
+    const movieGenre = await prisma.movieGenre.create({
+      data: {
+        movieId: movieId,
+        genreId: genreId,
+      },
+    });
+
+    res.status(201).send({
+      msg: "Genre added to movie successfully",
+      data: movieGenre,
+    });
+  } catch (error: any) {
+    res.status(400).send("Error adding genre to movie: " + error.message);
+  }
+};
+
+export const genresByMovieId = async (req: Request, res: Response) => {
+  const movieId = parseInt(req.params.movieId);
+
+  if (!movieId) {
+    return res.status(400).send("Missing required movieId parameter");
+  }
+
+  try {
+    // Find the movie with the given ID
+    const movie = await prisma.movies.findUnique({
+      where: {
+        id: movieId,
+      },
+      include: {
+        genres: {
+          include: {
+            genre: true,
+          },
+        },
+      },
+    });
+
+    if (!movie) {
+      return res.status(404).send("Movie not found");
+    }
+
+    // Extract genres with name and id from the movie
+    const genres = movie.genres.map((genre) => ({
+      id: genre.genreId,
+      name: genre.genre.name,
+    }));
+
+    res.status(200).send({
+      movieId: movieId,
+      genres: genres,
+    });
+  } catch (error: any) {
+    res.status(400).send("Error retrieving genres by movieId: " + error.message);
+  }
+};
+
 export const getAllGenres = async (req: Request, res: Response) => {
   try {
     const allGenres = await prisma.genre.findMany({

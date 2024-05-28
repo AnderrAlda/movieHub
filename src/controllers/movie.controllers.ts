@@ -1,6 +1,32 @@
 import { Request, Response } from "express";
 import prisma from "../db/client";
 
+
+
+export const getMovieById = async (req: Request, res: Response) => {
+  const movieId = parseInt(req.params.id);
+
+  if (!movieId) {
+    return res.status(400).send("Invalid movieId");
+  }
+
+  try {
+    const movie = await prisma.movies.findUnique({
+      where: { id: movieId },
+      
+    });
+
+    if (!movie) {
+      return res.status(404).send("Movie not found");
+    }
+
+    res.status(200).send(movie);
+  } catch (error: any) {
+    res.status(400).send("Error retrieving movie: " + error.message);
+  }
+};
+
+
 export const getAllMovies = async (req: Request, res: Response) => {
   try {
     const allMovies = await prisma.movies.findMany({
